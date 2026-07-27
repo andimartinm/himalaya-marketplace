@@ -130,37 +130,17 @@ export default function EmprendedorPerfilPage() {
     setUploadingLogo(true);
     
     try {
-      // Get presigned URL
-      const presignedRes = await fetch('/api/upload/presigned', {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('isPublic', 'true');
+
+      const uploadRes = await fetch('/api/upload/presigned', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          isPublic: true,
-        }),
-      });
-
-      if (!presignedRes.ok) throw new Error('Error al obtener URL de carga');
-
-      const { uploadUrl, cloud_storage_path, publicUrl } = await presignedRes.json();
-
-      // Check if content-disposition is in signed headers
-      const urlParams = new URLSearchParams(uploadUrl.split('?')[1]);
-      const signedHeaders = urlParams.get('X-Amz-SignedHeaders') || '';
-      const headers: Record<string, string> = { 'Content-Type': file.type };
-      if (signedHeaders.includes('content-disposition')) {
-        headers['Content-Disposition'] = 'attachment';
-      }
-
-      // Upload to S3
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers,
-        body: file,
+        body: formData,
       });
 
       if (!uploadRes.ok) throw new Error('Error al subir archivo');
+      const { cloud_storage_path, publicUrl } = await uploadRes.json();
 
       setForm(prev => ({ ...prev, logoUrl: publicUrl, logoKey: cloud_storage_path }));
       toast.success('Logo subido correctamente');
@@ -188,19 +168,17 @@ export default function EmprendedorPerfilPage() {
     }
     setUploadingBanner(true);
     try {
-      const presignedRes = await fetch('/api/upload/presigned', {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('isPublic', 'true');
+
+      const uploadRes = await fetch('/api/upload/presigned', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true }),
+        body: formData,
       });
-      if (!presignedRes.ok) throw new Error('Error al obtener URL');
-      const { uploadUrl, cloud_storage_path, publicUrl } = await presignedRes.json();
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type, 'Content-Disposition': 'attachment' },
-        body: file,
-      });
+
       if (!uploadRes.ok) throw new Error('Error al subir');
+      const { cloud_storage_path, publicUrl } = await uploadRes.json();
       setForm(prev => ({ ...prev, bannerUrl: publicUrl, bannerKey: cloud_storage_path }));
       toast.success('Banner subido correctamente');
     } catch {

@@ -156,54 +156,28 @@ export default function EmprendedorProductosPage() {
     
     try {
       let fileToUpload: File;
-      let contentType: string;
-      let fileName: string;
 
-      // Try to compress image, fallback to original if compression fails (e.g., HEIC on some browsers)
       try {
         const compressedBlob = await compressImage(file);
         fileToUpload = new File([compressedBlob], `${Date.now()}-${slot}-${file.name.replace(/\.[^/.]+$/, '.jpg')}`, {
           type: 'image/jpeg',
         });
-        contentType = 'image/jpeg';
-        fileName = fileToUpload.name;
       } catch (compressionError) {
         console.log('Compression failed, uploading original file:', compressionError);
         fileToUpload = file;
-        contentType = file.type || 'image/jpeg';
-        fileName = `${Date.now()}-${slot}-${file.name}`;
       }
 
-      const presignedRes = await fetch('/api/upload/presigned', {
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      formData.append('isPublic', 'true');
+
+      const uploadRes = await fetch('/api/upload/presigned', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName,
-          contentType,
-          isPublic: true,
-        }),
-      });
-
-      if (!presignedRes.ok) throw new Error('Error al obtener URL');
-
-      const { uploadUrl, cloud_storage_path, publicUrl } = await presignedRes.json();
-
-      // Check if content-disposition is in signed headers
-      const urlParams = new URLSearchParams(uploadUrl.split('?')[1]);
-      const signedHeaders = urlParams.get('X-Amz-SignedHeaders') || '';
-      const headers: Record<string, string> = { 'Content-Type': contentType };
-      
-      if (signedHeaders.includes('content-disposition')) {
-        headers['Content-Disposition'] = 'attachment';
-      }
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers,
-        body: fileToUpload,
+        body: formData,
       });
 
       if (!uploadRes.ok) throw new Error('Error al subir archivo');
+      const { cloud_storage_path, publicUrl } = await uploadRes.json();
 
       // Update form based on slot
       if (slot === 1) {

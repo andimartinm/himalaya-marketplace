@@ -111,35 +111,17 @@ export default function RegistroEmprendedorPage() {
 
     setUploading(true);
     try {
-      const res = await fetch('/api/upload/presigned', {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('isPublic', 'true');
+
+      const uploadRes = await fetch('/api/upload/presigned', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          isPublic: true,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Error al obtener URL');
-
-      const { uploadUrl, cloud_storage_path, publicUrl } = await res.json();
-
-      // Check if content-disposition is in signed headers
-      const urlParams = new URLSearchParams(uploadUrl.split('?')[1]);
-      const signedHeaders = urlParams.get('X-Amz-SignedHeaders') || '';
-      const headers: Record<string, string> = { 'Content-Type': file.type };
-      if (signedHeaders.includes('content-disposition')) {
-        headers['Content-Disposition'] = 'attachment';
-      }
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers,
-        body: file,
+        body: formData,
       });
 
       if (!uploadRes.ok) throw new Error('Error al subir archivo');
+      const { cloud_storage_path, publicUrl } = await uploadRes.json();
       
       setForm(prev => ({ 
         ...prev, 

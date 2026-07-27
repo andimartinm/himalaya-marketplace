@@ -3,45 +3,40 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { generatePresignedUploadUrl } from '@/lib/s3';
+import { put } from '@vercel/blob';
 
 export async function POST(request: Request) {
   try {
-    // Permitir sin sesión para registro de empresa (logo y comprobante)
     const session = await getServerSession(authOptions);
-    if (!session) {
-      // Solo permitir upload público (logo/comprobante de registro)
-      const body = await request.json();
-      const { fileName, contentType, isPublic } = body;
-      if (!fileName || !contentType) {
-        return NextResponse.json({ error: 'fileName y contentType son requeridos' }, { status: 400 });
-      }
-      if (isPublic !== true) {
-        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-      }
-      const { uploadUrl, cloud_storage_path, publicUrl } = await generatePresignedUploadUrl(
-        fileName,
-        contentType,
-        true
-      );
-      return NextResponse.json({ uploadUrl, cloud_storage_path, publicUrl });
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+    const isPublic = formData.get('isPublic') === 'true';
+
+    if (!file) {
+      return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 });
     }
 
-    const { fileName, contentType, isPublic } = await request.json();
-
-    if (!fileName || !contentType) {
-      return NextResponse.json({ error: 'fileName y contentType son requeridos' }, { status: 400 });
+    if (!session && isPublic !== true) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { uploadUrl, cloud_storage_path, publicUrl } = await generatePresignedUploadUrl(
-      fileName,
-      contentType,
-      isPublic ?? true
-    );
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const pathname = isPublic
+      ? `public/uploads/${timestamp}-${safeName}`
+      : `uploads/${timestamp}-${safeName}`;
 
-    return NextResponse.json({ uploadUrl, cloud_storage_path, publicUrl });
+    const blob = await put(pathname, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+
+    return NextResponse.json({
+      cloud_storage_path: blob.pathname,
+      publicUrl: blob.url,
+    });
   } catch (error) {
-    console.error('Error generating presigned URL:', error);
-    return NextResponse.json({ error: 'Error al generar URL de subida' }, { status: 500 });
+    console.error('Error uploading:', error);
+    return NextResponse.json({ error: 'Error al subir archivo' }, { status: 500 });
   }
 }

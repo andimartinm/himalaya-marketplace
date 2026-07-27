@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { getFileUrl } from '@/lib/s3';
 
 // GET all payments or payments for a specific emprendedor
 export async function GET(request: NextRequest) {
@@ -31,23 +30,7 @@ export async function GET(request: NextRequest) {
       orderBy: [{ periodYear: 'desc' }, { periodMonth: 'desc' }],
     });
 
-    // Generar URLs frescas para los comprobantes que tienen proofKey
-    const paymentsWithFreshUrls = await Promise.all(
-      payments.map(async (payment) => {
-        if (payment.proofKey) {
-          try {
-            const freshUrl = await getFileUrl(payment.proofKey, false);
-            return { ...payment, proofUrl: freshUrl };
-          } catch (error) {
-            console.error('Error generating URL for proof:', error);
-            return payment;
-          }
-        }
-        return payment;
-      })
-    );
-
-    return NextResponse.json(paymentsWithFreshUrls);
+    return NextResponse.json(payments);
   } catch (error) {
     console.error('Error fetching payments:', error);
     return NextResponse.json({ error: 'Error al obtener pagos' }, { status: 500 });

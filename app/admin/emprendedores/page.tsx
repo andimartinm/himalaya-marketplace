@@ -112,33 +112,19 @@ function EmprendedoresContent() {
 
     setUploading(true);
     try {
-      const res = await fetch('/api/upload/presigned', {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('isPublic', 'true');
+
+      const uploadRes = await fetch('/api/upload/presigned', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          isPublic: true,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Error al obtener URL');
-
-      const { uploadUrl, cloud_storage_path } = await res.json();
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-          'Content-Disposition': 'attachment',
-        },
-        body: file,
+        body: formData,
       });
 
       if (!uploadRes.ok) throw new Error('Error al subir archivo');
+      const { cloud_storage_path, publicUrl } = await uploadRes.json();
 
-      const fileUrl = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME || 'pedite-bucket'}.s3.amazonaws.com/${cloud_storage_path}`;
-      setNewPayment(prev => ({ ...prev, proofUrl: fileUrl, proofKey: cloud_storage_path }));
+      setNewPayment(prev => ({ ...prev, proofUrl: publicUrl, proofKey: cloud_storage_path }));
       toast.success('Comprobante subido');
     } catch (error) {
       toast.error('Error al subir comprobante');

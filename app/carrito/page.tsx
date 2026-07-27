@@ -111,47 +111,26 @@ export default function CarritoPage() {
     setUploadingProof(true);
     try {
       let fileToUpload: File;
-      let contentType = 'image/jpeg';
-      let fileName = `${Date.now()}-comprobante.jpg`;
 
       try {
         const compressedBlob = await compressImage(file);
-        fileToUpload = new File([compressedBlob], fileName, { type: contentType });
+        fileToUpload = new File([compressedBlob], `${Date.now()}-comprobante.jpg`, { type: 'image/jpeg' });
       } catch (compressionError) {
         console.log('Compression failed, uploading original:', compressionError);
         fileToUpload = file;
-        contentType = file.type || 'image/jpeg';
-        fileName = file.name || fileName;
       }
 
-      const res = await fetch('/api/upload/presigned', {
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      formData.append('isPublic', 'false');
+
+      const uploadRes = await fetch('/api/upload/presigned', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName,
-          contentType,
-          isPublic: false,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Error al obtener URL de subida');
-      const { uploadUrl, cloud_storage_path, publicUrl } = await res.json();
-
-      const urlParams = new URLSearchParams(uploadUrl.split('?')[1]);
-      const signedHeaders = urlParams.get('X-Amz-SignedHeaders') || '';
-      const headers: Record<string, string> = { 'Content-Type': contentType };
-
-      if (signedHeaders.includes('content-disposition')) {
-        headers['Content-Disposition'] = 'attachment';
-      }
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers,
-        body: fileToUpload,
+        body: formData,
       });
 
       if (!uploadRes.ok) throw new Error('Error al subir el archivo al servidor');
+      const { cloud_storage_path, publicUrl } = await uploadRes.json();
 
       setPaymentProofUrl(publicUrl);
       setPaymentProofKey(cloud_storage_path);

@@ -119,30 +119,17 @@ export default function RegistroEmpresaForm() {
     else setUploading(true);
 
     try {
-      const res = await fetch('/api/upload/presigned', {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('isPublic', 'true');
+
+      const uploadRes = await fetch('/api/upload/presigned', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          isPublic: true,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Error al obtener URL');
-
-      const { uploadUrl, cloud_storage_path, publicUrl } = await res.json();
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-          'Content-Disposition': 'attachment',
-        },
-        body: file,
+        body: formData,
       });
 
       if (!uploadRes.ok) throw new Error('Error al subir archivo');
+      const { cloud_storage_path, publicUrl } = await uploadRes.json();
 
       if (type === 'logo') {
         setForm(prev => ({ ...prev, logoUrl: publicUrl, logoKey: cloud_storage_path }));
