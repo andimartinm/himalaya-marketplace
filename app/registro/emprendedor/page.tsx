@@ -97,11 +97,6 @@ export default function RegistroEmprendedorPage() {
     }
   }, [status, session]);
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copiado!`);
-  };
-
   const handleBarrioToggle = (barrioId: string) => {
     setForm(prev => ({
       ...prev,
