@@ -60,14 +60,12 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
-      // For Google sign in, create/update user with full name
       if (account?.provider === 'google') {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
         });
-        
+
         if (!existingUser) {
-          // Create new user from Google
           await prisma.user.create({
             data: {
               email: user.email!,
@@ -78,12 +76,17 @@ export const authOptions: NextAuthOptions = {
               emailVerified: new Date(),
             },
           });
-        } else if (!existingUser.fullName && user.name) {
-          // Update fullName if missing
-          await prisma.user.update({
-            where: { email: user.email! },
-            data: { fullName: user.name },
-          });
+        } else {
+          const updateData: Record<string, any> = {};
+          if (!existingUser.fullName && user.name) updateData.fullName = user.name;
+          if (existingUser.status === 'PENDIENTE') updateData.status = 'APROBADO';
+          if (!existingUser.emailVerified) updateData.emailVerified = new Date();
+          if (Object.keys(updateData).length > 0) {
+            await prisma.user.update({
+              where: { email: user.email! },
+              data: updateData,
+            });
+          }
         }
       }
       return true;
