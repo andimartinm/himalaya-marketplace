@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
-import { Mail, Lock, User, Phone, Store, FileText, Clock, Eye, EyeOff, Loader2, CheckCircle, Banknote, Link2, DollarSign, Copy, Upload, X, MapPin, Building2, CreditCard, BadgePercent } from 'lucide-react';
+import { Mail, Lock, User, Phone, Store, FileText, Clock, Eye, EyeOff, Loader2, CheckCircle, MapPin, Building2, CreditCard, BadgePercent, X, Upload } from 'lucide-react';
 import { Footer } from '@/components/footer';
 import toast from 'react-hot-toast';
 
@@ -13,58 +12,24 @@ interface Categoria {
   name: string;
 }
 
-interface PaymentSettings {
-  payment_alias: string;
-  payment_cbu: string;
-  payment_titular: string;
-}
-
 const PLANES = [
   {
-    id: 'EMPRENDEDOR_EXTERNO',
-    name: 'Emprendedor Externo',
-    productos: 5,
-    precio: 15000,
-    color: 'teal',
+    id: 'FREE',
+    name: 'Plan Gratuito',
+    productos: 10,
+    precio: 0,
+    color: 'green',
     allowCsv: false,
     mpLink: '',
-  },
-  {
-    id: 'PROFESIONAL',
-    name: 'Profesional',
-    productos: 50,
-    precio: 44000,
-    color: 'blue',
-    popular: true,
-    allowCsv: true,
-    mpLink: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=02e70473bfaf4b1ea6171ec25525e05c',
-  },
-  {
-    id: 'PREMIUM',
-    name: 'Premium',
-    productos: 100,
-    precio: 68000,
-    color: 'purple',
-    allowCsv: true,
-    mpLink: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=ce73e445efea4da5832f9a85ea531639',
   },
 ];
 
 export default function RegistroEmpresaForm() {
-  const searchParams = useSearchParams();
-  // Soportar tanto showEmprendedor como showemprendedor (case-insensitive)
-  const showEmprendedor = searchParams.get('showEmprendedor') === '1' || searchParams.get('showemprendedor') === '1' || searchParams.get('plan') === 'emprendedor';
-  const planesVisibles = showEmprendedor ? PLANES : PLANES.filter((p) => p.id !== 'EMPRENDEDOR_EXTERNO');
-  const planInicial = showEmprendedor ? 'EMPRENDEDOR_EXTERNO' : 'PROFESIONAL';
+  const planesVisibles = PLANES;
+  const planInicial = 'FREE';
 
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
-    payment_alias: 'himalaya.pilar.mp',
-    payment_cbu: '0000003100099999999991',
-    payment_titular: 'Himalaya Agency SRL',
-  });
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -85,7 +50,7 @@ export default function RegistroEmpresaForm() {
     horarios: '',
     direccionComercial: '',
     zona: '',
-    // Plan (Emprendedor Externo si ?showEmprendedor=1 o ?plan=emprendedor)
+    // Plan
     plan: planInicial,
     // Medios de pago
     acceptsCash: true,
@@ -95,28 +60,13 @@ export default function RegistroEmpresaForm() {
     // Archivos
     logoUrl: '',
     logoKey: '',
-    registrationProofUrl: '',
-    registrationProofKey: '',
   });
 
-  useEffect(() => {
-    const planIds = planesVisibles.map((p) => p.id);
-    if (form.plan && !planIds.includes(form.plan)) {
-      setForm((prev) => ({ ...prev, plan: planIds[0] || 'PROFESIONAL' }));
-    }
-  }, [showEmprendedor]);
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copiado!`);
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'proof' | 'logo') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (type === 'logo') setUploadingLogo(true);
-    else setUploading(true);
+    setUploadingLogo(true);
 
     try {
       const formData = new FormData();
@@ -131,31 +81,20 @@ export default function RegistroEmpresaForm() {
       if (!uploadRes.ok) throw new Error('Error al subir archivo');
       const { cloud_storage_path, publicUrl } = await uploadRes.json();
 
-      if (type === 'logo') {
-        setForm(prev => ({ ...prev, logoUrl: publicUrl, logoKey: cloud_storage_path }));
-        toast.success('Logo subido correctamente');
-      } else {
-        setForm(prev => ({ ...prev, registrationProofUrl: publicUrl, registrationProofKey: cloud_storage_path }));
-        toast.success('Comprobante subido correctamente');
-      }
+      setForm(prev => ({ ...prev, logoUrl: publicUrl, logoKey: cloud_storage_path }));
+      toast.success('Logo subido correctamente');
     } catch (error) {
-      toast.error(`Error al subir ${type === 'logo' ? 'logo' : 'comprobante'}`);
+      toast.error('Error al subir logo');
     } finally {
-      if (type === 'logo') setUploadingLogo(false);
-      else setUploading(false);
+      setUploadingLogo(false);
     }
   };
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/categorias').then(res => res.json()),
-      fetch('/api/admin/settings').then(res => res.json()),
-    ]).then(([c, s]) => {
-      setCategorias(c ?? []);
-      if (s) setPaymentSettings(s);
-    }).catch(() => {
-      setCategorias([]);
-    });
+    fetch('/api/categorias')
+      .then(res => res.json())
+      .then(c => setCategorias(c ?? []))
+      .catch(() => setCategorias([]));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,29 +152,10 @@ export default function RegistroEmpresaForm() {
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Registro exitoso</h1>
             <p className="text-gray-600 mb-4">Tu cuenta de empresa está pendiente de aprobación.</p>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-left">
-              <p className="text-sm text-blue-800 font-medium">Plan seleccionado: {selectedPlan.name}</p>
-              <p className="text-sm text-blue-700">Hasta {selectedPlan.productos} productos</p>
-              <p className="text-sm text-blue-700 mt-1">
-                Precio: <strong>${selectedPlan.precio.toLocaleString('es-AR')}</strong>/mes
-                {selectedPlan.mpLink && (
-                  <span className="text-blue-500 ml-1">(14 días gratis)</span>
-                )}
-              </p>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">
+              <p className="text-sm text-green-800 font-medium">Plan gratuito activado</p>
+              <p className="text-sm text-green-700">Hasta {selectedPlan.productos} productos</p>
             </div>
-            {form.registrationProofUrl ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">
-                <p className="text-sm text-green-800 font-medium">\u2705 Comprobante de pago adjuntado</p>
-                <p className="text-sm text-green-700 mt-1">Te validaremos en las próximas 24hs hábiles.</p>
-              </div>
-            ) : (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 text-left">
-                <p className="text-sm text-yellow-800 font-medium mb-2">\ud83d\udccc Recordá realizar el pago:</p>
-                <p className="text-sm text-yellow-700">
-                  <strong>${selectedPlan.precio.toLocaleString('es-AR')}</strong> al alias: <strong>{paymentSettings.payment_alias}</strong>
-                </p>
-              </div>
-            )}
             <Link href="/login" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
               Ir a Login
             </Link>
@@ -263,19 +183,17 @@ export default function RegistroEmpresaForm() {
             </div>
             <p className="text-gray-500 text-center mb-2">Sumá tu comercio a la comunidad</p>
 
-            {/* Banner de prueba gratis - oculto para Emprendedor Externo */}
-            {form.plan !== 'EMPRENDEDOR_EXTERNO' && (
-              <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-3 mb-6 text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <BadgePercent className="w-5 h-5 text-white" />
-                  <p className="text-white font-semibold">14 días GRATIS en tu primer mes</p>
-                </div>
+            {/* Banner de registro gratis */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-3 mb-6 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <BadgePercent className="w-5 h-5 text-white" />
+                <p className="text-white font-semibold">GRATIS PARA EMPRESAS</p>
               </div>
-            )}
+            </div>
 
             {/* Progress steps */}
             <div className="flex justify-center gap-2 mb-8">
-              {[1, 2, 3, 4].map((s) => (
+              {[1, 2, 3].map((s) => (
                 <div
                   key={s}
                   className={`w-3 h-3 rounded-full transition-colors ${
@@ -302,18 +220,13 @@ export default function RegistroEmpresaForm() {
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {plan.popular && (
-                          <span className="absolute -top-2 right-3 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
-                            Más elegido
-                          </span>
-                        )}
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-semibold text-gray-800">{plan.name}</p>
                             <p className="text-sm text-gray-500">Hasta {plan.productos} productos</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-bold text-gray-800">${plan.precio.toLocaleString('es-AR')}</p>
+                            <p className="text-lg font-bold text-green-600">GRATIS</p>
                           </div>
                         </div>
                       </button>
@@ -574,7 +487,7 @@ export default function RegistroEmpresaForm() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleFileUpload(e, 'logo')}
+                          onChange={handleFileUpload}
                           className="hidden"
                           disabled={uploadingLogo}
                         />
@@ -591,185 +504,8 @@ export default function RegistroEmpresaForm() {
                       Atrás
                     </button>
                     <button
-                      type="button"
-                      onClick={() => {
-                        if (!form.businessName) {
-                          toast.error('El nombre comercial es obligatorio');
-                          return;
-                        }
-                        if (!form.direccionComercial || !form.zona) {
-                          toast.error('La dirección y zona son obligatorias');
-                          return;
-                        }
-                        setStep(4);
-                      }}
-                      className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {step === 4 && (
-                <>
-                  <div className="text-center mb-4">
-                    <DollarSign className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-                    <h2 className="text-lg font-bold text-gray-800">Datos para el pago</h2>
-                    <p className="text-sm text-gray-500">
-                      Plan {selectedPlan.name}: <strong>${selectedPlan.precio.toLocaleString('es-AR')}</strong>/mes
-                      {selectedPlan.mpLink && (
-                        <span className="text-green-600 ml-1">(14 días gratis)</span>
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Titular</p>
-                      <p className="font-medium text-gray-800">{paymentSettings.payment_titular}</p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Alias</p>
-                      <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
-                        <span className="font-mono font-medium text-blue-600">{paymentSettings.payment_alias}</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(paymentSettings.payment_alias, 'Alias')}
-                          className="p-1 text-gray-400 hover:text-blue-600"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">CBU</p>
-                      <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
-                        <span className="font-mono text-sm text-gray-700">{paymentSettings.payment_cbu}</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(paymentSettings.payment_cbu, 'CBU')}
-                          className="p-1 text-gray-400 hover:text-blue-600"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Link de suscripción MercadoPago */}
-                  {selectedPlan.mpLink && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                      <p className="text-sm text-blue-800 font-medium mb-2">O suscribite directamente por Mercado Pago (incluye 14 días gratis):</p>
-                      <a
-                        href={selectedPlan.mpLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
-                      >
-                        <CreditCard className="w-4 h-4" />
-                        Suscribirme por Mercado Pago
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Medios de pago propios */}
-                  <div className="space-y-3 pt-4 border-t border-gray-200">
-                    <label className="block text-sm font-medium text-gray-700">Tus medios de pago (para recibir de clientes)</label>
-
-                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.acceptsCash}
-                        onChange={(e) => setForm({ ...form, acceptsCash: e.target.checked })}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <Banknote className="w-5 h-5 text-gray-500" />
-                      <span>Acepto efectivo</span>
-                    </label>
-
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Alias de transferencia</label>
-                      <input
-                        type="text"
-                        value={form.bankAlias}
-                        onChange={(e) => setForm({ ...form, bankAlias: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="mi.alias.mp"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Link de Mercado Pago</label>
-                      <div className="relative">
-                        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="url"
-                          value={form.mercadoPagoLink}
-                          onChange={(e) => setForm({ ...form, mercadoPagoLink: e.target.value })}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                          placeholder="https://link.mercadopago.com.ar/..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Upload proof */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Comprobante de pago (recomendado)
-                    </label>
-                    {form.registrationProofUrl ? (
-                      <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl">
-                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-700 flex-1">Comprobante cargado</span>
-                        <button
-                          type="button"
-                          onClick={() => setForm({ ...form, registrationProofUrl: '', registrationProofKey: '' })}
-                          className="p-1 text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-500 transition-colors">
-                        {uploading ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                        ) : (
-                          <Upload className="w-5 h-5 text-gray-400" />
-                        )}
-                        <span className="text-sm text-gray-500">
-                          {uploading ? 'Subiendo...' : 'Subir comprobante de transferencia'}
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => handleFileUpload(e, 'proof')}
-                          className="hidden"
-                          disabled={uploading}
-                        />
-                      </label>
-                    )}
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
-                    <p className="font-medium mb-1">\ud83d\udccc Importante</p>
-                    <p>Realizá la transferencia y adjuntá el comprobante. Te validaremos en las próximas 24hs hábiles.</p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setStep(3)}
-                      className="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                    >
-                      Atrás
-                    </button>
-                    <button
                       type="submit"
-                      disabled={loading || uploading || uploadingLogo}
+                      disabled={loading || uploadingLogo}
                       className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {loading ? (
@@ -784,6 +520,7 @@ export default function RegistroEmpresaForm() {
                   </div>
                 </>
               )}
+
             </form>
 
             <div className="mt-6 text-center">

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, Lock, User, Phone, CreditCard, Store, FileText, Clock, MapPin, Truck, Eye, EyeOff, Loader2, CheckCircle, Banknote, Link2, Home, DollarSign, Copy, Upload, X, UserCheck } from 'lucide-react';
+import { Mail, Lock, User, Phone, CreditCard, Store, FileText, Clock, MapPin, Truck, Eye, EyeOff, Loader2, CheckCircle, Banknote, Home, UserCheck } from 'lucide-react';
 import { Footer } from '@/components/footer';
 import toast from 'react-hot-toast';
 
@@ -34,11 +34,10 @@ export default function RegistroEmprendedorPage() {
     payment_alias: 'himalaya.pilar.mp',
     payment_cbu: '0000003100099999999991',
     payment_titular: 'Himalaya Agency SRL',
-    monthly_fee: '15000',
+    monthly_fee: '0',
     mercadopago_link: '',
   });
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
@@ -64,8 +63,6 @@ export default function RegistroEmprendedorPage() {
     residenceBarrioId: '',
     loteNumber: '',
     barrioIds: [] as string[],
-    registrationProofUrl: '',
-    registrationProofKey: '',
   });
 
   // Load existing user data if logged in
@@ -105,35 +102,13 @@ export default function RegistroEmprendedorPage() {
     toast.success(`${label} copiado!`);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('isPublic', 'true');
-
-      const uploadRes = await fetch('/api/upload/presigned', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!uploadRes.ok) throw new Error('Error al subir archivo');
-      const { cloud_storage_path, publicUrl } = await uploadRes.json();
-      
-      setForm(prev => ({ 
-        ...prev, 
-        registrationProofUrl: publicUrl, 
-        registrationProofKey: cloud_storage_path 
-      }));
-      toast.success('Comprobante subido correctamente');
-    } catch (error) {
-      toast.error('Error al subir comprobante');
-    } finally {
-      setUploading(false);
-    }
+  const handleBarrioToggle = (barrioId: string) => {
+    setForm(prev => ({
+      ...prev,
+      barrioIds: prev.barrioIds.includes(barrioId)
+        ? prev.barrioIds.filter(id => id !== barrioId)
+        : [...prev.barrioIds, barrioId],
+    }));
   };
 
   useEffect(() => {
@@ -150,15 +125,6 @@ export default function RegistroEmprendedorPage() {
       setCategorias([]);
     });
   }, []);
-
-  const handleBarrioToggle = (barrioId: string) => {
-    setForm(prev => ({
-      ...prev,
-      barrioIds: prev.barrioIds.includes(barrioId)
-        ? prev.barrioIds.filter(id => id !== barrioId)
-        : [...prev.barrioIds, barrioId],
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,19 +196,10 @@ export default function RegistroEmprendedorPage() {
             <p className="text-gray-600 mb-4">
               Tu cuenta de emprendedor está pendiente de aprobación.
             </p>
-            {form.registrationProofUrl ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">
-                <p className="text-sm text-green-800 font-medium">✅ Comprobante de pago adjuntado</p>
-                <p className="text-sm text-green-700 mt-1">Te validaremos en las próximas 24hs hábiles.</p>
-              </div>
-            ) : (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 text-left">
-                <p className="text-sm text-yellow-800 font-medium mb-2">📌 Recordá realizar el pago de tu primera cuota:</p>
-                <p className="text-sm text-yellow-700">
-                  <strong>${monthlyFee.toLocaleString('es-AR')}/mes</strong> al alias: <strong>{paymentSettings.payment_alias}</strong>
-                </p>
-              </div>
-            )}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">
+              <p className="text-sm text-green-800 font-medium">✅ Registro sin costo</p>
+              <p className="text-sm text-green-700 mt-1">Te validaremos en las próximas 24hs hábiles.</p>
+            </div>
             <Link
               href="/login"
               className="inline-block px-6 py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition-colors"
@@ -278,16 +235,16 @@ export default function RegistroEmprendedorPage() {
             <p className="text-gray-500 text-center mb-2">Sumá tu negocio a Pilar del Este</p>
             
             {/* Monthly fee banner */}
-            <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 mb-6 text-center">
-              <p className="text-sm text-teal-700">
-                <DollarSign className="w-4 h-4 inline -mt-1" />
-                Cuota mensual: <strong>${monthlyFee.toLocaleString('es-AR')}</strong>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-6 text-center">
+              <p className="text-sm text-green-700 font-semibold">
+                <CheckCircle className="w-4 h-4 inline -mt-1" />
+                Cuota mensual: ¡GRATIS!
               </p>
             </div>
 
             {/* Progress steps */}
             <div className="flex justify-center gap-2 mb-8">
-              {[1, 2, 3, 4].map((s) => (
+              {[1, 2, 3].map((s) => (
                 <div
                   key={s}
                   className={`w-3 h-3 rounded-full transition-colors ${
@@ -659,7 +616,7 @@ export default function RegistroEmprendedorPage() {
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Link de Mercado Pago</label>
                       <div className="relative">
-                        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                           type="url"
                           value={form.mercadoPagoLink}
@@ -680,134 +637,8 @@ export default function RegistroEmprendedorPage() {
                       Atrás
                     </button>
                     <button
-                      type="button"
-                      onClick={() => setStep(4)}
-                      className="flex-1 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition-colors"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {step === 4 && (
-                <>
-                  <div className="text-center mb-4">
-                    <DollarSign className="w-12 h-12 text-teal-600 mx-auto mb-2" />
-                    <h2 className="text-lg font-bold text-gray-800">Datos para el pago</h2>
-                    <p className="text-sm text-gray-500">Cuota mensual: <strong>${monthlyFee.toLocaleString('es-AR')}</strong></p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Titular</p>
-                      <p className="font-medium text-gray-800">{paymentSettings.payment_titular}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Alias</p>
-                      <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
-                        <span className="font-mono font-medium text-teal-600">{paymentSettings.payment_alias}</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(paymentSettings.payment_alias, 'Alias')}
-                          className="p-1 text-gray-400 hover:text-teal-600"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">CBU</p>
-                      <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
-                        <span className="font-mono text-sm text-gray-700">{paymentSettings.payment_cbu}</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(paymentSettings.payment_cbu, 'CBU')}
-                          className="p-1 text-gray-400 hover:text-teal-600"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {paymentSettings.mercadopago_link && (
-                      <div className="pt-2 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 mb-2">O pagá con Mercado Pago:</p>
-                        <a
-                          href={paymentSettings.mercadopago_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 w-full py-3 bg-[#009ee3] text-white rounded-lg font-semibold hover:bg-[#007eb5] transition-colors"
-                        >
-                          <Link2 className="w-5 h-5" />
-                          Suscribirme con Mercado Pago
-                        </a>
-                        <p className="text-xs text-gray-400 mt-1 text-center">
-                          Pago automático mensual con tarjeta
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Upload proof */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Comprobante de pago (opcional pero recomendado)
-                    </label>
-                    {form.registrationProofUrl ? (
-                      <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl">
-                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-700 flex-1">Comprobante cargado</span>
-                        <button
-                          type="button"
-                          onClick={() => setForm({ ...form, registrationProofUrl: '', registrationProofKey: '' })}
-                          className="p-1 text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal-500 transition-colors">
-                        {uploading ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-teal-600" />
-                        ) : (
-                          <Upload className="w-5 h-5 text-gray-400" />
-                        )}
-                        <span className="text-sm text-gray-500">
-                          {uploading ? 'Subiendo...' : 'Subir comprobante de transferencia'}
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          disabled={uploading}
-                        />
-                      </label>
-                    )}
-                    <p className="text-xs text-gray-400">
-                      Adjuntá el comprobante para acelerar la aprobación
-                    </p>
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
-                    <p className="font-medium mb-1">📌 Importante</p>
-                    <p>Realizá la transferencia y adjuntá el comprobante. Te validaremos en las próximas 24hs hábiles.</p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setStep(3)}
-                      className="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                    >
-                      Atrás
-                    </button>
-                    <button
                       type="submit"
-                      disabled={loading || uploading}
+                      disabled={loading}
                       className="flex-1 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {loading ? (
@@ -822,6 +653,7 @@ export default function RegistroEmprendedorPage() {
                   </div>
                 </>
               )}
+
             </form>
 
             <div className="mt-6 text-center">
