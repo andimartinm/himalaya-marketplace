@@ -1,0 +1,289 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  VECINO
+  EMPRENDEDOR
+  ADMIN
+}
+
+enum UserStatus {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+enum OrderStatus {
+  PENDIENTE
+  CONFIRMADO
+  EN_PREPARACION
+  ENTREGADO
+  CANCELADO
+}
+
+enum DeliveryMethod {
+  ENTREGA_PROPIA
+  RETIRO_DOMICILIO
+  PUNTO_ENCUENTRO
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TRANSFERENCIA
+  MERCADO_PAGO
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  emailVerified DateTime?
+  password      String     @default("")
+  fullName      String
+  phone         String?
+  dni           String?
+  role          UserRole   @default(VECINO)
+  status        UserStatus @default(PENDIENTE)
+  barrioId      String?
+  resetToken    String?
+  resetTokenExpiry DateTime?
+  barrio        Barrio?    @relation(fields: [barrioId], references: [id])
+  lotNumber     String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  emprendedor   Emprendedor?
+  pedidos       Pedido[]
+  couponUsages  CouponUsage[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Barrio {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  description   String?
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  users         User[]
+  emprendedores EmprendedorBarrio[]
+}
+
+model Categoria {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  description   String?
+  icon          String?
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  productos     Producto[]
+  emprendedores Emprendedor[]
+}
+
+enum SubscriptionStatus {
+  PENDIENTE_PAGO
+  ACTIVO
+  VENCIDO
+  CANCELADO
+}
+
+enum TipoEmprendedor {
+  VECINO
+  EMPRESA
+}
+
+enum PlanEmpresa {
+  INICIAL
+  EMPRENDEDOR_EXTERNO
+  PROFESIONAL
+  PREMIUM
+}
+
+model Emprendedor {
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName    String
+  deliveryMethods String?
+  description     String?
+  categoriaId     String?
+  categoria       Categoria?      @relation(fields: [categoriaId], references: [id])
+  horarios        String?
+  acceptsCash     Boolean         @default(true)
+  bankAlias       String?
+  bankCbu         String?
+  mercadoPagoLink String?
+  deliveryMethod  DeliveryMethod  @default(ENTREGA_PROPIA)
+  address         String?
+  loteNumber      String?
+  residenceBarrioId String?
+  active          Boolean         @default(true)
+  subscriptionStatus SubscriptionStatus @default(PENDIENTE_PAGO)
+  subscriptionExpiry DateTime?
+  monthlyFee      Float           @default(15000)
+  registrationProofUrl String?
+  registrationProofKey String?
+  // Campos para empresas externas
+  tipo            TipoEmprendedor @default(VECINO)
+  plan            PlanEmpresa?
+  limiteProductos Int?
+  direccionComercial String?
+  zona            String?
+  logoUrl         String?
+  logoKey         String?
+  bannerUrl       String?
+  bannerKey       String?
+  razonSocial     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  barrios         EmprendedorBarrio[]
+  productos       Producto[]
+  pedidos         Pedido[]
+  payments        PaymentRecord[]
+}
+
+model EmprendedorBarrio {
+  id            String      @id @default(cuid())
+  emprendedorId String
+  emprendedor   Emprendedor @relation(fields: [emprendedorId], references: [id], onDelete: Cascade)
+  barrioId      String
+  barrio        Barrio      @relation(fields: [barrioId], references: [id], onDelete: Cascade)
+  @@unique([emprendedorId, barrioId])
+}
+
+model Producto {
+  id            String        @id @default(cuid())
+  name          String
+  description   String?
+  price         Float
+  imageUrl      String?
+  imageKey      String?
+  imageUrl2     String?
+  imageKey2     String?
+  imageUrl3     String?
+  imageKey3     String?
+  images        Json?
+  isPublicImage Boolean       @default(true)
+  emprendedorId String
+  emprendedor   Emprendedor   @relation(fields: [emprendedorId], references: [id], onDelete: Cascade)
+  categoriaId   String?
+  categoria     Categoria?    @relation(fields: [categoriaId], references: [id])
+  available     Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  pedidoItems   PedidoItem[]
+}
+
+model Pedido {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  emprendedorId   String
+  emprendedor     Emprendedor    @relation(fields: [emprendedorId], references: [id])
+  status          OrderStatus    @default(PENDIENTE)
+  deliveryMethod  DeliveryMethod
+  deliveryAddress String?
+  notes           String?
+  total           Float
+  paymentMethod   PaymentMethod?
+  paymentProofUrl String?
+  paymentProofKey String?
+  discount        Float?
+  couponId        String?
+  coupon          Coupon?        @relation(fields: [couponId], references: [id])
+  couponUsage     CouponUsage?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  items           PedidoItem[]
+}
+
+model PedidoItem {
+  id          String    @id @default(cuid())
+  pedidoId    String
+  pedido      Pedido    @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId  String
+  producto    Producto  @relation(fields: [productoId], references: [id])
+  quantity    Int
+  unitPrice   Float
+  subtotal    Float
+}
+
+model PaymentRecord {
+  id            String      @id @default(cuid())
+  emprendedorId String
+  emprendedor   Emprendedor @relation(fields: [emprendedorId], references: [id], onDelete: Cascade)
+  amount        Float
+  periodMonth   Int
+  periodYear    Int
+  proofUrl      String?
+  proofKey      String?
+  notes         String?
+  recordedBy    String?
+  createdAt     DateTime    @default(now())
+  @@unique([emprendedorId, periodMonth, periodYear])
+}
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  updatedAt   DateTime @updatedAt
+}
+
+model Coupon {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  discountPercent Float         @default(30)
+  maxUsesPerUser  Int           @default(3)
+  active          Boolean       @default(true)
+  startDate       DateTime      @default(now())
+  endDate         DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  pedidos         Pedido[]
+  usages          CouponUsage[]
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  couponId  String
+  userId    String
+  pedidoId  String   @unique
+  createdAt DateTime @default(now())
+
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido    Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, userId, pedidoId])
+}
