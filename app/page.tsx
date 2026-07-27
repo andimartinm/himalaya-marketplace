@@ -233,7 +233,7 @@ export default function HomePage() {
           </h2>
           <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
             Dejá de vender solo por WhatsApp.
-            Mostrá tu catálogo ordenado, recibí pedidos claros y llegá a todos los vecinos de Pilar del Este desde un solo lugar.
+            Mostrá tu catálogo ordenado, recibí pedidos claros y llegá a todos los vecinos desde un solo lugar.
             <br /><br />
             Más visibilidad. Más organización. Más ventas.
           </p>
