@@ -218,7 +218,7 @@ async function main() {
           residenceBarrioId: e.residenceBarrioId || null, active: toBool(e.active),
           subscriptionStatus: (e.subscriptionStatus || 'PENDIENTE_PAGO') as any,
           monthlyFee: toFloat(e.monthlyFee) || 15000,
-          tipo: (e.tipo || 'VECINO') as any, plan: e.plan || null,
+          tipo: (e.tipo || 'VECINO') as any, plan: (e.plan || null) as any,
           limiteProductos: toInt(e.limiteProductos),
           direccionComercial: e.direccionComercial || null, zona: e.zona || null,
           logoUrl: e.logoUrl || null, logoKey: e.logoKey || null,
