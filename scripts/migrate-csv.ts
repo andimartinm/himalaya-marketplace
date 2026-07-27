@@ -153,13 +153,14 @@ async function main() {
   const accounts = parseCSV(join(CSV_DIR, 'account - data (2).csv'));
   console.log(`Accounts: ${accounts.length}`);
   for (const a of accounts) {
-    if (!validUserIds.has(a.userId)) continue;
+    const resolvedUserId = resolveUserId(a.userId);
+    if (!validUserIds.has(resolvedUserId)) continue;
     try {
       await prisma.account.upsert({
         where: { id: a.id },
         update: {},
         create: {
-          id: a.id, userId: resolveUserId(a.userId), type: a.type, provider: a.provider,
+          id: a.id, userId: resolvedUserId, type: a.type, provider: a.provider,
           providerAccountId: a.providerAccountId,
           refresh_token: a.refresh_token || null, access_token: a.access_token || null,
           expires_at: toInt(a.expires_at), token_type: a.token_type || null,
@@ -315,7 +316,8 @@ async function main() {
   const validPedidoIds = new Set<string>();
   console.log(`Pedidos: ${pedidos.length}`);
   for (const p of pedidos) {
-    if (!validUserIds.has(p.userId) || !validEmprendedorIds.has(p.emprendedorId)) continue;
+    const resolvedUserId = resolveUserId(p.userId);
+    if (!validUserIds.has(resolvedUserId) || !validEmprendedorIds.has(p.emprendedorId)) continue;
     try {
       await prisma.pedido.upsert({
         where: { id: p.id },
@@ -330,7 +332,7 @@ async function main() {
           couponId: p.couponId || null,
         },
         create: {
-          id: p.id, userId: p.userId, emprendedorId: p.emprendedorId,
+          id: p.id, userId: resolvedUserId, emprendedorId: p.emprendedorId,
           status: (p.status || 'PENDIENTE') as any,
           deliveryMethod: (p.deliveryMethod || 'ENTREGA_PROPIA') as any,
           deliveryAddress: p.deliveryAddress || null,
