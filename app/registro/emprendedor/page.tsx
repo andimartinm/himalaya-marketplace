@@ -227,7 +227,7 @@ export default function RegistroEmprendedorPage() {
         <div className="w-full max-w-lg">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">Registro de Emprendedor</h1>
-            <p className="text-gray-500 text-center mb-2">Sumá tu negocio a Pilar del Este</p>
+            <p className="text-gray-500 text-center mb-2">Sumá tu negocio a PEDITE</p>
             
             {/* Monthly fee banner */}
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-6 text-center">
