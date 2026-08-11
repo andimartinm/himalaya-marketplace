@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 
@@ -116,7 +117,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 <p style="color: #666; font-size: 15px; line-height: 1.6;">Ya podés comenzar a subir tus productos y empezar a vender a todos los vecinos del barrio.</p>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${process.env.NEXTAUTH_URL}/emprendedor/productos" style="background-color: #0d9488; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block; border: 2px solid #0d9488;">Subir mis productos</a>
+                  <a href="${process.env.NEXTAUTH_URL}/login?email=${encodeURIComponent(updatedUser.email)}" style="background-color: #0d9488; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block; border: 2px solid #0d9488;">Subir mis productos</a>
                 </div>
                 
                 <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;" />
@@ -136,20 +137,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           </html>
         `;
 
-        await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            deployment_token: process.env.ABACUSAI_API_KEY,
-            app_id: process.env.WEB_APP_ID,
-            notification_id: process.env.NOTIF_ID_EMPRENDEDOR_HABILITADO,
-            recipient_email: updatedUser.email,
-            subject: '🎉 ¡Tu cuenta de emprendedor fue habilitada! - Pedite',
-            body: emailHtml,
-            is_html: true,
-            sender_email: 'noreply@pedite.shop',
-            sender_alias: 'Pedite',
-          }),
+        await sendEmail({
+          to: updatedUser.email,
+          subject: '🎉 ¡Tu cuenta de emprendedor fue habilitada! - Pedite',
+          html: emailHtml,
         });
       } catch (emailError) {
         console.error('Error sending approval email:', emailError);

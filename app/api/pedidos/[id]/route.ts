@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 
@@ -112,26 +113,11 @@ async function sendOrderStatusEmail(pedido: any, newStatus: string) {
       </div>
     `;
 
-    const response = await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        app_id: process.env.WEB_APP_ID,
-        notification_id: process.env.NOTIF_ID_CAMBIO_DE_ESTADO_DE_PEDIDO,
-        subject: `Tu pedido está: ${statusLabel} - Pedite`,
-        body: htmlBody,
-        is_html: true,
-        recipient_email: userEmail,
-        sender_email: 'noreply@pedite.shop',
-        sender_alias: 'Pedite',
-      }),
+    await sendEmail({
+      to: userEmail,
+      subject: `Tu pedido está: ${statusLabel} - Pedite`,
+      html: htmlBody,
     });
-
-    const result = await response.json();
-    if (!result.success && !result.notification_disabled) {
-      console.error('Failed to send notification:', result.message);
-    }
   } catch (error) {
     console.error('Error sending order status email:', error);
   }

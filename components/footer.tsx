@@ -85,7 +85,7 @@ export function Footer({ variant = 'dark' }: FooterProps) {
         <div className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} pt-6`}>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
             <p className={isDark ? 'text-gray-500' : 'text-gray-400'}>
-              © 2026 Pedite.shop
+              © 2026 Pedite.shop <span className="text-[10px] opacity-50 ml-1">v2.0</span>
             </p>
             <a
               href="https://himalaya.agency"

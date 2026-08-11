@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
 import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
@@ -80,26 +81,11 @@ export async function POST(request: NextRequest) {
 
     // Send notification email
     try {
-      const response = await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deployment_token: process.env.ABACUSAI_API_KEY,
-          app_id: process.env.WEB_APP_ID,
-          notification_id: process.env.NOTIF_ID_RECUPERACIN_DE_CONTRASEA,
-          recipient_email: user.email,
-          subject: '🔐 Recuperá tu contraseña - Pedite',
-          body: emailHtml,
-          is_html: true,
-          sender_email: 'noreply@pedite.shop',
-          sender_alias: 'Pedite',
-        }),
+      await sendEmail({
+        to: user.email,
+        subject: '🔐 Recuperá tu contraseña - Pedite',
+        html: emailHtml,
       });
-      
-      const result = await response.json();
-      if (!result.success && !result.notification_disabled) {
-        console.error('Error sending recovery email:', result.message || result.error);
-      }
     } catch (emailError) {
       console.error('Error sending recovery email:', emailError);
     }

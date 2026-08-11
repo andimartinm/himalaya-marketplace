@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn, getSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Lock, Eye, EyeOff, Loader2, X, ArrowLeft } from 'lucide-react';
@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +20,13 @@ export default function LoginPage() {
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [sendingRecovery, setSendingRecovery] = useState(false);
   const [recoverySent, setRecoverySent] = useState(false);
+
+  useEffect(() => {
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, [searchParams]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +66,7 @@ export default function LoginPage() {
         toast.error(result.error);
         setLoading(false);
       } else {
-        toast.success('Bienvenido!');
+        toast.success('Bienvenida/o!');
         // Get session to determine role and redirect accordingly
         const session = await getSession();
         const role = (session?.user as any)?.role;
@@ -96,7 +104,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-4 pb-8">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">Bienvenido</h1>
+            <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">Bienvenida/o</h1>
             <p className="text-gray-500 text-center mb-8">Ingresá a tu cuenta</p>
 
             {/* Google Sign In Button */}

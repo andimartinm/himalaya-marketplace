@@ -262,12 +262,11 @@ function EmprendedoresContent() {
                     <div className="text-right">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                         emp.subscriptionStatus === 'ACTIVO' ? 'bg-green-100 text-green-700' :
-                        emp.subscriptionStatus === 'PENDIENTE_PAGO' ? 'bg-yellow-100 text-yellow-700' :
+                        emp.subscriptionStatus === 'PENDIENTE_PAGO' ? 'bg-green-100 text-green-700' :
                         'bg-red-100 text-red-700'
                       }`}>
-                        {emp.subscriptionStatus}
+                        {emp.subscriptionStatus === 'PENDIENTE_PAGO' ? 'Bonificado' : emp.subscriptionStatus === 'ACTIVO' ? 'Activo' : emp.subscriptionStatus}
                       </span>
-                      <p className="text-sm text-gray-500 mt-1">${emp.monthlyFee.toLocaleString('es-AR')}/mes</p>
                     </div>
                   </div>
                 </div>

@@ -66,10 +66,10 @@ export function SplashScreen() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.3 }}
-            className="absolute bottom-20 z-10"
+            className="absolute bottom-[30%] z-10"
           >
-            <span className="text-gray-600 text-xl font-medium tracking-widest">
-              PILAR DEL ESTE
+            <span className="text-gray-600 text-sm font-medium tracking-wide text-center w-full">
+              MARKETPLACE PARA BARRIOS CERRADOS
             </span>
           </motion.div>
         </motion.div>

@@ -2,38 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
 import bcrypt from 'bcryptjs';
-
-async function sendNotificationEmail(params: {
-  app_id: string;
-  notification_id: string;
-  recipient_email: string;
-  subject: string;
-  body: string;
-  is_html?: boolean;
-  sender_alias?: string;
-}) {
-  try {
-    const response = await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        ...params,
-      }),
-    });
-    const result = await response.json();
-    if (!result.success && !result.notification_disabled) {
-      console.error('Failed to send welcome email:', result.message);
-    }
-    return result.success;
-  } catch (error) {
-    console.error('Error sending notification email:', error);
-    return false;
-  }
-}
 
 export async function POST(request: Request) {
   try {
@@ -133,7 +103,7 @@ export async function POST(request: Request) {
         where: { id: existingUser.id },
         data: {
           role: 'EMPRENDEDOR',
-          status: 'PENDIENTE',
+          status: 'APROBADO',
           fullName: fullName || existingUser.fullName,
           phone: phone || existingUser.phone,
           dni: dni || existingUser.dni,
@@ -172,8 +142,45 @@ export async function POST(request: Request) {
         });
       }
 
+      await sendEmail({
+        to: existingUser.email,
+        subject: '🎉 ¡Tu cuenta de emprendedor fue habilitada! - Pedite',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <img src="https://pedite.shop/logo-pedite-oficial.png" alt="Pedite" style="height: 60px;" />
+            </div>
+            <h1 style="color: #0d9488; text-align: center;">🎉 ¡Tu cuenta fue habilitada!</h1>
+            <p style="font-size: 16px; color: #374151;">Hola <strong>${fullName}</strong>,</p>
+            <p style="font-size: 16px; color: #374151;">
+              ¡Excelentes noticias! Tu cuenta de emprendedor <strong>"${businessName}"</strong> ya está activa en Pedite.
+            </p>
+            <p style="font-size: 16px; color: #374151;">Ya podés comenzar a subir tus productos y empezar a vender a todos los vecinos del barrio.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXTAUTH_URL}/login?email=${encodeURIComponent(existingUser.email)}" style="background-color: #0d9488; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                Cargar mis productos
+              </a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+            <div style="text-align: center; margin-bottom: 20px;">
+              <p style="font-size: 14px; color: #374151; margin-bottom: 15px;">
+                <strong>Seguinos en Instagram</strong><br />
+                <a href="https://www.instagram.com/pedite.shop" style="color: #0d9488; text-decoration: none;">@pedite.shop</a>
+              </p>
+              <p style="font-size: 14px; color: #374151;">
+                <strong>Soporte y feedback</strong><br />
+                <a href="https://wa.me/5491171508355" style="color: #0d9488; text-decoration: none;">WhatsApp: +54 9 11 7150-8355</a>
+              </p>
+            </div>
+            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+              © 2026 Pedite - Tu marketplace de barrio
+            </p>
+          </div>
+        `,
+      });
+
       return NextResponse.json({
-        message: 'Registro como emprendedor exitoso. Tu cuenta está pendiente de aprobación.',
+        message: 'Registro como emprendedor exitoso. Tu cuenta ya está activa.',
         userId: existingUser.id,
         emprendedorId: emprendedor.id,
       });
@@ -213,7 +220,7 @@ export async function POST(request: Request) {
           phone: phone || null,
           dni: dni || null,
           role: 'EMPRENDEDOR',
-          status: 'PENDIENTE',
+          status: 'APROBADO',
         },
       });
 
@@ -233,7 +240,6 @@ export async function POST(request: Request) {
           monthlyFee: customMonthlyFee || 55000,
           registrationProofUrl: registrationProofUrl || null,
           registrationProofKey: registrationProofKey || null,
-          // Campos específicos de empresa
           tipo: 'EMPRESA',
           plan: plan || 'PROFESIONAL',
           limiteProductos: limiteProductos || 50,
@@ -245,8 +251,45 @@ export async function POST(request: Request) {
         },
       });
 
+      await sendEmail({
+        to: email,
+        subject: '🎉 ¡Tu cuenta de emprendedor fue habilitada! - Pedite',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <img src="https://pedite.shop/logo-pedite-oficial.png" alt="Pedite" style="height: 60px;" />
+            </div>
+            <h1 style="color: #0d9488; text-align: center;">🎉 ¡Tu cuenta fue habilitada!</h1>
+            <p style="font-size: 16px; color: #374151;">Hola <strong>${fullName}</strong>,</p>
+            <p style="font-size: 16px; color: #374151;">
+              ¡Excelentes noticias! Tu cuenta de empresa <strong>"${businessName}"</strong> ya está activa en Pedite.
+            </p>
+            <p style="font-size: 16px; color: #374151;">Ya podés comenzar a subir tus productos y empezar a vender.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXTAUTH_URL}/login?email=${encodeURIComponent(email)}" style="background-color: #0d9488; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                Cargar mis productos
+              </a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+            <div style="text-align: center; margin-bottom: 20px;">
+              <p style="font-size: 14px; color: #374151; margin-bottom: 15px;">
+                <strong>Seguinos en Instagram</strong><br />
+                <a href="https://www.instagram.com/pedite.shop" style="color: #0d9488; text-decoration: none;">@pedite.shop</a>
+              </p>
+              <p style="font-size: 14px; color: #374151;">
+                <strong>Soporte y feedback</strong><br />
+                <a href="https://wa.me/5491171508355" style="color: #0d9488; text-decoration: none;">WhatsApp: +54 9 11 7150-8355</a>
+              </p>
+            </div>
+            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+              © 2026 Pedite - Tu marketplace de barrio
+            </p>
+          </div>
+        `,
+      });
+
       return NextResponse.json({
-        message: 'Registro de empresa exitoso. Tu cuenta está pendiente de aprobación.',
+        message: 'Registro de empresa exitoso. Tu cuenta ya está activa.',
         userId: user.id,
         emprendedorId: emprendedor.id,
       });
@@ -266,7 +309,7 @@ export async function POST(request: Request) {
           phone: phone || null,
           dni: dni || null,
           role: 'EMPRENDEDOR',
-          status: 'PENDIENTE',
+          status: 'APROBADO',
           barrioId: validBarrioId,
         },
       });
@@ -303,8 +346,45 @@ export async function POST(request: Request) {
         });
       }
 
+      await sendEmail({
+        to: email,
+        subject: '🎉 ¡Tu cuenta de emprendedor fue habilitada! - Pedite',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <img src="https://pedite.shop/logo-pedite-oficial.png" alt="Pedite" style="height: 60px;" />
+            </div>
+            <h1 style="color: #0d9488; text-align: center;">🎉 ¡Tu cuenta fue habilitada!</h1>
+            <p style="font-size: 16px; color: #374151;">Hola <strong>${fullName}</strong>,</p>
+            <p style="font-size: 16px; color: #374151;">
+              ¡Excelentes noticias! Tu cuenta de emprendedor <strong>"${businessName}"</strong> ya está activa en Pedite.
+            </p>
+            <p style="font-size: 16px; color: #374151;">Ya podés comenzar a subir tus productos y empezar a vender a todos los vecinos del barrio.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXTAUTH_URL}/login?email=${encodeURIComponent(email)}" style="background-color: #0d9488; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                Cargar mis productos
+              </a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+            <div style="text-align: center; margin-bottom: 20px;">
+              <p style="font-size: 14px; color: #374151; margin-bottom: 15px;">
+                <strong>Seguinos en Instagram</strong><br />
+                <a href="https://www.instagram.com/pedite.shop" style="color: #0d9488; text-decoration: none;">@pedite.shop</a>
+              </p>
+              <p style="font-size: 14px; color: #374151;">
+                <strong>Soporte y feedback</strong><br />
+                <a href="https://wa.me/5491171508355" style="color: #0d9488; text-decoration: none;">WhatsApp: +54 9 11 7150-8355</a>
+              </p>
+            </div>
+            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+              © 2026 Pedite - Tu marketplace de barrio
+            </p>
+          </div>
+        `,
+      });
+
       return NextResponse.json({
-        message: 'Registro exitoso. Tu cuenta está pendiente de aprobación.',
+        message: 'Registro exitoso. Tu cuenta ya está activa.',
         userId: user.id,
         emprendedorId: emprendedor.id,
       });
@@ -359,14 +439,10 @@ export async function POST(request: Request) {
         </div>
       `;
 
-      await sendNotificationEmail({
-        app_id: process.env.WEB_APP_ID || '',
-        notification_id: process.env.NOTIF_ID_BIENVENIDA_VECINO || '',
-        recipient_email: email,
+      await sendEmail({
+        to: email,
         subject: '¡Bienvenido/a a Pedite! 🎉',
-        body: welcomeEmailBody,
-        is_html: true,
-        sender_alias: 'Pedite',
+        html: welcomeEmailBody,
       });
 
       return NextResponse.json({

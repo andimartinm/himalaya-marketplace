@@ -72,7 +72,7 @@ export function ModeTransition({ mode, show, onComplete }: ModeTransitionProps) 
           {/* Texto Pilar del Este abajo */}
           <div className="absolute bottom-20 z-10">
             <span className="text-gray-600 text-xl font-medium tracking-widest">
-              PILAR DEL ESTE
+              MARKETPLACE PARA BARRIOS CERRADOS
             </span>
           </div>
         </motion.div>

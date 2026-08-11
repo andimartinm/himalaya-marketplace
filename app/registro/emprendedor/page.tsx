@@ -187,13 +187,13 @@ export default function RegistroEmprendedorPage() {
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Registro exitoso</h1>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">¡Cuenta activada!</h1>
             <p className="text-gray-600 mb-4">
-              Tu cuenta de emprendedor está pendiente de aprobación.
+              Tu cuenta de emprendedor ya está activa. Recibiste un email con las instrucciones para empezar.
             </p>
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">
               <p className="text-sm text-green-800 font-medium">✅ Registro sin costo</p>
-              <p className="text-sm text-green-700 mt-1">Te validaremos en las próximas 24hs hábiles.</p>
+              <p className="text-sm text-green-700 mt-1">Ya podés cargar tus productos y empezar a vender.</p>
             </div>
             <Link
               href="/login"

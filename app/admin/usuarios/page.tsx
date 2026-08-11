@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { createWhatsAppLink } from '@/lib/phone-utils';
 
 const subscriptionStatusConfig: Record<string, { label: string; color: string }> = {
-  PENDIENTE_PAGO: { label: 'Pendiente pago', color: 'bg-yellow-100 text-yellow-700' },
+  PENDIENTE_PAGO: { label: 'Bonificado', color: 'bg-green-100 text-green-700' },
   ACTIVO: { label: 'Activo', color: 'bg-green-100 text-green-700' },
   VENCIDO: { label: 'Vencido', color: 'bg-red-100 text-red-700' },
   CANCELADO: { label: 'Cancelado', color: 'bg-gray-100 text-gray-700' },
